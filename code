@@ -1,0 +1,43 @@
+-- SQL Data Warehouse: Medallion Architecture
+-- Author: Urmila Murri | May 2024
+
+-- Bronze: Raw Data
+CREATE TABLE bronze_sales (
+    Order_ID VARCHAR(50),
+    Order_Date VARCHAR(20),
+    Customer_Name VARCHAR(100),
+    Sales DECIMAL(10,2),
+    Profit DECIMAL(10,2),
+    Region VARCHAR(50)
+);
+
+BULK INSERT bronze_sales
+FROM 'C:\data\sales_raw.csv'
+WITH (FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2);
+
+-- Silver: Cleaned
+CREATE TABLE silver_sales AS
+SELECT 
+    CAST(Order_ID AS VARCHAR(50)) AS Order_ID,
+    TRY_CAST(Order_Date AS DATE) AS Order_Date,
+    Customer_Name,
+    CAST(Sales AS DECIMAL(10,2)) AS Sales,
+    CAST(Profit AS DECIMAL(10,2)) AS Profit,
+    Region
+FROM bronze_sales
+WHERE Order_Date IS NOT NULL AND Sales IS NOT NULL;
+
+-- Gold: Aggregated
+CREATE TABLE gold_monthly_kpi AS
+SELECT 
+    YEAR(Order_Date) AS Year,
+    MONTH(Order_Date) AS Month,
+    Region,
+    SUM(Sales) AS Total_Sales,
+    SUM(Profit) AS Total_Profit,
+    COUNT(DISTINCT Order_ID) AS Order_Count
+FROM silver_sales
+GROUP BY YEAR(Order_Date), MONTH(Order_Date), Region;
+
+-- Sample Query
+SELECT * FROM gold_monthly_kpi ORDER BY Year, Month;
