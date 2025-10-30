@@ -1,5 +1,5 @@
 -- SQL Data Warehouse: Medallion Architecture
--- Author: Urmila Murri | May 2024
+-- Author: Urmila Murri 
 
 -- Bronze: Raw Data
 CREATE TABLE bronze_sales (
